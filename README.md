@@ -12,8 +12,8 @@ for(i = 0; i < size; i++)
 
 ```
 
-In questo array vengono specificati il numero di elementi della matrice A che ogni processore dovrà andare a moltiplicare. Nel caso in cui il numero di righe della matrie A non sia divisibile per il numero di processori, ai primi m%size processori viene assegnata una riga in più.
-Per gestire il caso in cui il numero di righe della matrice A non fosse divisibile per il numero di processori è stata usata la MPI_Gatherv, che consente ai processori di restituire risultati di dimensione diversa.
+In questo array vengono specificati il numero di elementi della matrice A che ogni processore dovrà usare nel calcolo della matrice prodotto. Nel caso in cui il numero di righe della matrice A non sia divisibile per il numero di processori, ai primi m%size processori viene assegnata una riga in più.
+Per gestire il caso in cui il numero di righe della matrice A non è divisibile per il numero di processori è stata usata la MPI_Gatherv, che consente ai processori di restituire risultati di dimensione diversa.
 Il master a questo punto procede a calcolare gli array revcounts e displs che successivamente utilizzerà nella MPI_Gatherv. La funzione computeSubResult viene utilizzata per computare la porzione di matrice C che spetta ad ogni processore:
 
 ```
@@ -34,7 +34,7 @@ void computeSubResult(int *mat1, int *mat2, long *result, int elemsPerProc, int 
 
 Gli slave prima di invocare tale funzione devono calcolare il valore del proprio offset (la posizione nella matrice A dalla quale devono iniziare il calcolo). I dati computati dai vari processori, infine, vengono riuniti utilizzando la MPI_Gatherv.
 ### Risultati ###
-Per effettuare il testing sono state utilizzate istanze m4.xlarge invece di m4.large in quanto è stato riscontrato il seguente comportamento anomalo nel corso dei test: eseguendo il programma su m4.large, il tempo di esecuzione aumentava in modo considerevole nel momento in cui si andava ad utilizzare più di un vCPU per istanza. Sulle m4.xlarge, invece, il problema si manifesta solo nel caso in cui vengano utilizzate più di 2 vCPU per istanza. Per effettuare i test, quindi, sono state utilizzate 8 istanze m4.xlarge sfruttando però solo 16 processori. Tale anomalia, inoltre, non è stata riscontrata utilizzando istanze t2.medium (2 vCPU) e in locale.
+Per effettuare il testing sono state utilizzate istanze m4.xlarge invece di m4.large in quanto è stato riscontrato il seguente comportamento anomalo nel corso dei test: eseguendo il programma su m4.large, il tempo di esecuzione aumentava in modo considerevole nel momento in cui si andava ad utilizzare più di un vCPU per istanza. Sulle m4.xlarge, invece, il problema si manifesta solo nel caso in cui vengano utilizzate più di 2 vCPU per istanza. Per effettuare i test, quindi, sono state utilizzate 8 istanze m4.xlarge sfruttando però solo 16 processori. Tale anomalia, inoltre, non è stata riscontrata utilizzando istanze t2.medium e in locale.
 #### Strong scalability
 
 | m | n | l | istanze | processori | Tempo (secondi) |
@@ -55,6 +55,8 @@ Per effettuare il testing sono state utilizzate istanze m4.xlarge invece di m4.l
 | 2400 | 2400	| 2400 | 7 | 14	| 18.82
 | 2400 | 2400	| 2400 | 8 | 15	| 17.53
 | 2400 | 2400	| 2400 | 8 | 16	| 16.56
+
+ Come è possibile vedere anche dai grafici presenti nella cartella doc, inizialmente il tempo di esecuzione del programma si riduce notevolmente all'aumentare dei processori ma, successivamente, lo speedup diventa sempre più piccolo.
 
 #### Weak scalability
 
@@ -77,6 +79,8 @@ Per effettuare il testing sono state utilizzate istanze m4.xlarge invece di m4.l
 | 2250 | 2400 |	2400 | 8 | 15 |	16.49
 | 2400 | 2400 |	2400 | 8 | 16 |	16.51
 
+Per quanto riguarda la weak scalability, il tempo di esecuzione aumenta fino a 3 processori, per poi stabilizzarsi notevolmente.
+
 ### Esecuzione ###
 Per l'esecuzione bisogna dare in input al programma i valori m, n, l:
 
@@ -85,3 +89,5 @@ Per l'esecuzione bisogna dare in input al programma i valori m, n, l:
 mpirun -np num.processori --host MASTER,IP_SLAVE1,IP_SLAVE2 eseguibile m n l
 
 ```
+
+Nel file sorgente alla riga 84 è presente la chiamata alla funzione printMatrix (stampa in un file la matrice risultato) che è stata commentata per velocizzare l'esecuzione del programma. Per testare il corretto funzionamento del programma è possibile rimuovere i commenti dalle righe 49-54 e 58-63 che servono a stampare, rispettivamente, le matrici A e B.
